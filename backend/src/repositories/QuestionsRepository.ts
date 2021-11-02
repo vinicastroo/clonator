@@ -5,17 +5,27 @@ import Question from '../models/Question';
 
 @EntityRepository(Question)
 class QuestionsRepository extends Repository<Question> {
-    public async findById(id: string): Promise<Question | null> {
-        if(!isUuid(id)) {
-          throw new AppError('Invalid ID.')
-        }
+  public async findFirst(): Promise<Question | null> {
+    const findQuestion = await this.findOne({
+      order: {
+        created_at: 'ASC'
+      }
+    });
 
-        const findQuestion = await this.findOne({
-            where: { id },
-        });
+    return findQuestion || null;
+  }
 
-        return findQuestion || null;
-    }
+  public async findById(id: string): Promise<Question | null> {
+      if(!isUuid(id)) {
+        throw new AppError('Invalid ID.')
+      }
+
+      const findQuestion = await this.findOne({
+          where: { id },
+      });
+
+      return findQuestion || null;
+  }
 }
 
 export default QuestionsRepository;
