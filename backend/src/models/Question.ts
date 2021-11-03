@@ -1,8 +1,9 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('question')
 class Question {
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -15,13 +16,18 @@ class Question {
   @Column({ nullable: true })
   next_question_id: string;
 
-  @ManyToOne(() => Question, question => question.next_question)
+  @CreateDateColumn()
+  created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
+
+  @ManyToOne((type) => Question, (question) => question.question)
   @JoinColumn({ name: 'next_question_id' })
   parent: Question;
 
-  @OneToMany(() => Question, question => question.parent)
-  next_question: Question[];
-
+  @OneToMany((type) => Question, (question) => question.parent)
+  question: Question[];
 }
 
 export default Question;

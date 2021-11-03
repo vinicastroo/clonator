@@ -13,7 +13,15 @@ routes.get('/', async (request, response) => {
   return response.json(questions);
 });
 
-routes.get('/:id', async (request, response) => {
+routes.get('/findFirst', async (request, response) => {
+  const questionsRepository = getCustomRepository(QuestionsRepository);
+
+  const question = await questionsRepository.findFirst();
+
+  return response.json(question);
+});
+
+routes.get('/findById/:id', async (request, response) => {
   const { id } = request.params;
 
   const questionsRepository = getCustomRepository(QuestionsRepository);
