@@ -3,8 +3,8 @@ import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColum
 @Entity('question')
 class Question {
 
-	@PrimaryGeneratedColumn('uuid')
-	id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
   description: string;
@@ -15,12 +15,12 @@ class Question {
   @Column({ nullable: true })
   next_question_id: string;
 
-  @ManyToOne(type => Question, question => question.question)
-  @JoinColumn({name: 'next_question_id'})
+  @ManyToOne(() => Question, question => question.next_question)
+  @JoinColumn({ name: 'next_question_id' })
   parent: Question;
 
-  @OneToMany(type => Question, question => question.parent)
-  question: Question[];
+  @OneToMany(() => Question, question => question.parent)
+  next_question: Question[];
 
 }
 
