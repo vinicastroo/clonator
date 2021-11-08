@@ -35,19 +35,20 @@ class Question {
   @UpdateDateColumn()
   updated_at: Date;
 
-  @ManyToOne((type) => Question, (question) => question.question_yes)
+  @ManyToOne((type) => Question, (question) => question.questions_yes)
   @JoinColumn({ name: 'next_question_yes_id' })
-  parent_yes: Question;
+  next_question_yes: Question;
 
-  @ManyToOne((type) => Question, (question) => question.question_no)
+  @ManyToOne((type) => Question, (question) => question.questions_no)
   @JoinColumn({ name: 'next_question_no_id' })
-  parent_no: Question;
+  next_question_no: Question;
 
-  @OneToMany((type) => Question, (question) => question.parent_yes)
-  question_yes: Question[];
+  @OneToMany((type) => Question, (question) => question.next_question_yes)
+  questions_yes: Question[];
 
-  @OneToMany((type) => Question, (question) => question.parent_yes)
-  question_no: Question[];
+  @OneToMany((type) => Question, (question) => question.next_question_yes)
+  questions_no: Question[];
+
 }
 
 export default Question;

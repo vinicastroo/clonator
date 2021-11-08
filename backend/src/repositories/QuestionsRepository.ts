@@ -7,6 +7,7 @@ import Question from '../models/Question';
 class QuestionsRepository extends Repository<Question> {
   public async findFirst(): Promise<Question | null> {
     const findQuestion = await this.findOne({
+      relations: ['next_question_yes', 'next_question_no'],
       order: {
         created_at: 'ASC'
       }
@@ -16,15 +17,16 @@ class QuestionsRepository extends Repository<Question> {
   }
 
   public async findById(id: string): Promise<Question | null> {
-      if(!isUuid(id)) {
-        throw new AppError('Invalid ID.')
-      }
+    if (!isUuid(id)) {
+      throw new AppError('Invalid ID.')
+    }
 
-      const findQuestion = await this.findOne({
-          where: { id },
-      });
+    const findQuestion = await this.findOne({
+      relations: ['next_question_yes', 'next_question_no'],
+      where: { id },
+    });
 
-      return findQuestion || null;
+    return findQuestion || null;
   }
 }
 

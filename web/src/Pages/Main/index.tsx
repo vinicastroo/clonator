@@ -1,7 +1,9 @@
+/* eslint-disable no-nested-ternary */
+/* eslint-disable prettier/prettier */
 /* eslint-disable camelcase */
 /* eslint-disable react/style-prop-object */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Button from '@mui/material/Button';
 
 import Dialog from '@mui/material/Dialog';
@@ -37,19 +39,24 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(function Alert(
 export default function Main() {
   interface CreateResourceFormData {
     description: string;
-    anwser: string;
+    answer: string;
     id?: string;
   }
   interface QuestionData {
+    id: string;
     description: string;
-    anwser: string;
-    next_question_id?: string;
-    next_question: QuestionData;
+    answer: string;
+    next_question_yes_id?: string;
+    next_question_no_id?: string;
+    next_question_yes: QuestionData;
+    next_question_no: QuestionData;
+    typeParms: 'YES' | 'NO' | null;
+    active: boolean;
   }
 
   interface CreateResourceFormData {
     description: string;
-    anwser: string;
+    answer: string;
     next_question_id: string;
   }
   interface MessageProps {
@@ -58,9 +65,21 @@ export default function Main() {
     type: 'success' | 'info' | 'warning' | 'error';
   }
 
-  const [questions, setQuestions] = useState<QuestionData[]>();
-  const [selectQuestion, setSelectQuestion] = useState<QuestionData>();
+  interface ParamsPros {
+    question: QuestionData;
+    typeParms: 'YES' | 'NO' | null;
+  }
+
+  const [questions, setQuestions] = useState<QuestionData[]>([]);
+  const [selectQuestion, setSelectQuestion] = useState<QuestionData | null>(
+    null,
+  );
+
   const [open, setOpen] = useState(false);
+  const [openAnswer, setOpenAnswer] = useState(false);
+  const [openFinish, setOpenFinish] = useState(false);
+
+  const [typeQuestion, setTypeQuestion] = useState<'YES' | 'NO' | null>(null);
 
   const [message, setMessage] = useState<MessageProps>({
     open: false,
@@ -74,55 +93,86 @@ export default function Main() {
 
   const loadQuestions = useCallback(async () => {
     await api.get('/findFirst').then(response => {
-      setQuestions([response.data]);
-
-      console.log(response);
-
-      if (response.data.length === 0) {
+      if (!response.data) {
         setOpen(true);
+        return;
       }
+
+      setQuestions([{ ...response.data, active: true }]);
     });
   }, []);
+
+  const handleSubmit = useCallback(
+    async (data: CreateResourceFormData) => {
+      try {
+        await api.post(`/`, {
+          ...data,
+          typeQuestion,
+          id: selectQuestion?.id,
+        });
+
+        setOpen(false);
+        setOpenAnswer(false);
+        setOpenFinish(false);
+        setSelectQuestion(null);
+
+        setMessage({
+          open: true,
+          message: 'Questão criada com sucesso!',
+          type: 'success',
+        });
+
+        loadQuestions();
+      } catch (err: any) {
+        setMessage({
+          open: true,
+          message: 'Aconteceu um erro ao criar a questão',
+          type: 'error',
+        });
+      }
+    },
+    [selectQuestion, typeQuestion, loadQuestions],
+  );
+
+  const loadQuestionById = useCallback(
+    async ({ question, typeParms }: ParamsPros) => {
+      await api.get(`/findById/${question?.id}`).then(response => {
+        if (!response.data) {
+          setOpen(true);
+          return;
+        }
+
+        const formatedQuestions = questions.map(questionMap => { return { ...questionMap, active: false } });
+
+        setQuestions([...formatedQuestions, { ...response.data, typeParms, active: true }]);
+      });
+    },
+    [questions],
+  );
 
   useEffect(() => {
     loadQuestions();
   }, [loadQuestions]);
 
-  const handleSubmit = useCallback(async (data: CreateResourceFormData) => {
-    try {
-      await api.post(`/`, {
-        ...data,
-      });
-
-      setOpen(false);
-      setMessage({
-        open: true,
-        message: 'Questão criada com sucesso!',
-        type: 'success',
-      });
-    } catch (err: any) {
-      setMessage({
-        open: true,
-        message: 'Aconteceu um erro ao criar a questão',
-        type: 'error',
-      });
-    }
-  }, []);
-
   const handleClickOption = useCallback(
-    async (id?: string) => {
-      if (id) {
-        await api.get(`/${id}`).then(response => {
-          if (questions && questions.length > 0) {
-            setQuestions([...questions, response.data]);
-          }
-        });
+    async ({ question, typeParms }: ParamsPros) => {
+      setTypeQuestion(typeParms);
+      setSelectQuestion(question);
+
+      if (typeParms === 'YES' && question.next_question_yes_id) {
+        console.log(question)
+        loadQuestionById({ question: question.next_question_yes, typeParms });
+      } else if (typeParms === 'NO' && question.next_question_no_id) {
+        console.log(question)
+        loadQuestionById({ question: question.next_question_no, typeParms });
       } else {
         setOpen(true);
       }
     },
-    [questions],
+    [loadQuestionById],
   );
+
+  useEffect(() => { console.log(questions) }, [questions])
 
   return (
     <>
@@ -139,32 +189,56 @@ export default function Main() {
       <Container maxWidth="xl" sx={{ mt: 6 }}>
         {questions &&
           questions.map(question => (
-            <Card variant="outlined" sx={{ maxWidth: 345, p: 2 }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h6" color="text.secondary">
-                  {question.description}
-                </Typography>
-              </CardContent>
+            <Box display="grid" gridTemplateColumns="repeat(3, 1fr)" gap={2} >
+              <Card
+                key={question.id}
+                variant="outlined"
+                sx={{
+                  maxWidth: 345,
+                  p: 2,
+                  mt: 2,
+                  gridColumn: `${question.typeParms === 'YES'
+                    ? '3'
+                    : question.typeParms === 'NO'
+                      ? '1'
+                      : '2'
+                    }`,
+                }}
+              >
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <Typography variant="h6" color="text.secondary">
+                    {question.description}
+                  </Typography>
+                </CardContent>
 
-              <CardActions sx={{ display: 'flex', justifyContent: 'center' }}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  color="error"
-                  onClick={() => handleClickOption(question.next_question_id)}
-                >
-                  Não
-                </Button>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  onClick={() => handleClickOption(question.next_question_id)}
-                >
-                  Sim
-                </Button>
-              </CardActions>
-            </Card>
+                <CardActions sx={{ display: 'flex', justifyContent: 'center' }}>
+                  <Button
+                    disabled={!question.active}
+                    fullWidth
+                    variant="outlined"
+                    color="error"
+                    onClick={() => {
+                      handleClickOption({ question, typeParms: 'NO' });
+                    }}
+                  >
+                    Não
+                  </Button>
+                  <Button
+                    disabled={!question.active}
+                    fullWidth
+                    variant="outlined"
+                    onClick={() => {
+                      setSelectQuestion(question);
+                      setOpenAnswer(true);
+                    }}
+                  >
+                    Sim
+                  </Button>
+                </CardActions>
+              </Card>
+            </Box>
           ))}
+
       </Container>
 
       <Dialog open={open} onClose={() => setOpen(false)}>
@@ -197,6 +271,63 @@ export default function Main() {
             <Button type="submit">Enviar</Button>
           </DialogActions>
         </Form>
+      </Dialog>
+
+      {selectQuestion && (
+        <Dialog open={openAnswer} onClose={() => setOpenAnswer(false)}>
+          <DialogContent sx={{ p: 2, px: 6 }}>
+            <Typography variant="h6" color="text.secondary">
+              {`${selectQuestion?.answer} ?`}
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              fullWidth
+              variant="outlined"
+              color="error"
+              onClick={() => {
+                setOpenAnswer(false);
+                handleClickOption({
+                  question: selectQuestion,
+                  typeParms: 'YES',
+                });
+              }}
+            >
+              Não
+            </Button>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => {
+                setOpenFinish(true);
+                setOpen(false);
+                setOpenAnswer(false);
+              }}
+            >
+              Sim
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
+
+      <Dialog open={openFinish} onClose={() => setOpenFinish(false)}>
+        <DialogContent sx={{ p: 2, px: 6 }}>
+          <Typography variant="h6" color="text.secondary">
+            FIM DE JOGO
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={() => {
+              loadQuestions();
+              setOpenFinish(false);
+            }}
+          >
+            Reiniciar
+          </Button>
+        </DialogActions>
       </Dialog>
 
       <Snackbar
