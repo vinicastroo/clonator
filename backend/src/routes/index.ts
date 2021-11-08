@@ -32,7 +32,7 @@ routes.get('/findById/:id', async (request, response) => {
 });
 
 routes.post('/', async (request, response) => {
-  const { id, description, answer, nextQuestionId } = request.body;
+  const { id, description, answer, typeQuestion } = request.body;
 
   const createQuestionService = new CreateQuestionService();
 
@@ -40,7 +40,7 @@ routes.post('/', async (request, response) => {
     id,
     description,
     answer,
-    nextQuestionId
+    typeQuestion
   });
 
   return response.json(question);

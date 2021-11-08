@@ -9,11 +9,11 @@ interface RequestDTO {
   id: string;
   description: string;
   answer: string;
-  nextQuestionId: string;
+  typeQuestion: 'YES' | 'NO';
 }
 
 class CreateQuestionService {
-    public async execute({ id, description, answer, nextQuestionId }: RequestDTO): Promise<Question> {
+    public async execute({ id, description, answer, typeQuestion }: RequestDTO): Promise<Question> {
         const questionsRepository = getCustomRepository(QuestionsRepository);
 
         const question = questionsRepository.create({
@@ -30,7 +30,9 @@ class CreateQuestionService {
 
 
           if(parentQuestion) {
-            parentQuestion.next_question_id = question.id;
+            parentQuestion[
+              typeQuestion === 'YES' ? 'next_question_yes_id' : 'next_question_no_id'
+            ] = question.id;
 
             await questionsRepository.save(parentQuestion);
           }
