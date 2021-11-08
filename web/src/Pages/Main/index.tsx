@@ -73,8 +73,10 @@ export default function Main() {
   };
 
   const loadQuestions = useCallback(async () => {
-    await api.get('/').then(response => {
-      setQuestions(response.data);
+    await api.get('/findFirst').then(response => {
+      setQuestions([response.data]);
+
+      console.log(response);
 
       if (response.data.length === 0) {
         setOpen(true);
